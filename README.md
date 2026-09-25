@@ -116,15 +116,50 @@ Returns predicted severity class, clinical diagnosis label, and confidence proba
 
 ---
 
-## 📊 Key Results & Features
+## 📊 Key Results & Performance Showcase
 
 | Metric / Feature | Implementation Detail |
 |---|---|
 | **Primary Metric** | Quadratic Weighted Kappa (QWK) |
 | **Model Architecture** | Swin Transformer Tiny (`swin_tiny_patch4_window7_224`) |
 | **Inference Boost** | 3-View Test-Time Augmentation (TTA) |
-| **Explainability** | Grad-CAM++ with Swin spatial token reshape transform |
+| **Explainability** | Grad-CAM++ with Swin spatial token reshape transform & SHAP |
 | **Target Hardware** | NVIDIA RTX 4050 Laptop GPU (6GB VRAM, AMP Mixed Precision) |
+
+---
+
+## 📈 Model Performance & Evaluation Graphs
+
+### 1. Training & Validation Progress
+The model tracks loss convergence and Quadratic Weighted Kappa (QWK) score across all epochs:
+
+![Training & Validation Curves](outputs/training_curves.png)
+
+### 2. 5-Class Confusion Matrix
+Comprehensive breakdown of predictions across all DR severity levels (Class 0: No DR to Class 4: Proliferative DR):
+
+![Confusion Matrix](outputs/confusion_matrix.png)
+
+### 3. ROC & Precision-Recall Curves
+Per-class Receiver Operating Characteristic (ROC) and Precision-Recall (PR) curves evaluating diagnostic accuracy:
+
+![ROC & PR Curves](outputs/model_roc_pr_curves.png)
+
+---
+
+## 🔍 Explainable AI (XAI) & Lesion Localization
+
+### 1. Grad-CAM++ Attention Maps
+Visual explanation of key retinal regions (microaneurysms, hemorrhages, and exudates) influencing predictions across DR severity levels:
+
+![Grad-CAM Lesion Localization Heatmaps](outputs/gradcam_summary_all_classes.png)
+
+### 2. SHAP Feature Importance & Faithfulness Evaluation
+Global feature attribution analysis via SHAP alongside deletion/insertion curve evaluation for heatmap faithfulness:
+
+| SHAP Feature Summary | Deletion & Insertion Curves |
+|:---:|:---:|
+| ![SHAP Feature Summary](outputs/xai_report/shap_summary.png) | ![Deletion Insertion Curves](outputs/xai_report/deletion_insertion_curve.png) |
 
 ---
 

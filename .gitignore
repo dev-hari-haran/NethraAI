@@ -95,3 +95,4 @@ outputs/gradcam_examples/*.png
 ehthumbs.db
 Thumbs.db
 desktop.ini
+*.pptx
