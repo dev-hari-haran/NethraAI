@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RetinaCare AI — Diabetic Retinopathy Screening & Explainable AI</title>
+  <meta name="description"
+    content="AI-assisted Diabetic Retinopathy screening with Swin Transformer and SHAP explainability for SIH.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3.5"></circle>
+            <path d="M2 12c2.8-5 6.8-8 10-8s7.2 3 10 8c-2.8 5-6.8 8-10 8s-7.2-3-10-8z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">RetinaCare AI <span class="sih-tag">SIH</span></div>
+          <div class="brand-desc">Diabetic Retinopathy Screening &amp; Explainable AI (SHAP)</div>
+        </div>
+      </div>
+      <div class="status-pill" id="system-status">
+        <span class="status-dot"></span>
+        <span id="system-status-text">Connecting to Model...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="page-container">
+    <div class="app-grid">
+
+      <!-- Left Panel: Input & Patient Case Selection -->
+      <section class="card panel-input">
+        <div class="panel-title-row">
+          <div>
+            <h2 class="panel-title">Patient Fundus Scan</h2>
+            <p class="panel-subtitle">Upload a retinal image or choose a patient test case</p>
+          </div>
+          <span class="badge-num">1</span>
+        </div>
+
+        <!-- Upload Dropzone -->
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp" class="file-input">
+
+          <div class="dropzone-prompt" id="dropzone-prompt">
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                <path d="M12 12v9"></path>
+                <path d="m16 16-4-4-4 4"></path>
+              </svg>
+            </div>
+            <p class="upload-primary">Click to browse or drop retinal scan</p>
+            <p class="upload-secondary">Supports PNG, JPG, JPEG, TIFF (Max 25MB)</p>
+          </div>
+
+          <!-- Image Preview -->
+          <div class="preview-box hidden" id="preview-box">
+            <img id="image-preview" src="" alt="Patient Retinal Scan">
+            <button type="button" class="btn-remove" id="clear-btn" title="Remove image">&times;</button>
+          </div>
+        </div>
+
+        <!-- File Info Bar -->
+        <div class="file-info hidden" id="file-info">
+          <span class="file-name" id="file-name-label">image.png</span>
+          <span class="file-size" id="file-size-label">0 KB</span>
+        </div>
+
+        <!-- Test Patient Cases -->
+        <div class="test-cases">
+          <p class="test-cases-label">Evaluate Sample Patient Cases:</p>
+          <div class="test-cases-grid">
+            <button type="button" class="case-btn" data-sample="samplen1.png">
+              <span class="case-dot normal"></span>
+              <span>Case 1: Normal (No DR)</span>
+            </button>
+            <button type="button" class="case-btn" data-sample="samplem.png">
+              <span class="case-dot moderate"></span>
+              <span>Case 2: Mild NPDR</span>
+            </button>
+            <button type="button" class="case-btn" data-sample="samplep1.png">
+              <span class="case-dot prolif"></span>
+              <span>Case 3: Proliferative DR</span>
+            </button>
+            <button type="button" class="case-btn" data-sample="IDRiD_02.jpg">
+              <span class="case-dot idrid"></span>
+              <span>Case 4: Clinical IDRiD</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Action Button -->
+        <button type="button" id="analyze-btn" class="btn-analyze" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="analyze-btn-text">Run Diagnostic Screening</span>
+        </button>
+
+        <!-- Pipeline Specs -->
+        <div class="specs-box">
+          <div class="spec-item">
+            <span class="spec-label">Model Architecture</span>
+            <span class="spec-val">Swin Transformer (384&times;384)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Enhancement</span>
+            <span class="spec-val">Ben Graham Color Normalization</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Explainability</span>
+            <span class="spec-val">SHAP Image Feature Attribution</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Clinical Diagnostic & SHAP Output -->
+      <section class="card panel-results">
+        <div class="panel-title-row">
+          <div>
+            <h2 class="panel-title">Diagnostic Assessment &amp; XAI</h2>
+            <p class="panel-subtitle">Model prediction, clinical recommendation &amp; visual explanation</p>
+          </div>
+          <span class="badge-num">2</span>
+        </div>
+
+        <!-- Standby State -->
+        <div class="state-standby" id="standby-view">
+          <div class="standby-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+          </div>
+          <h3 class="standby-title">Awaiting Patient Scan</h3>
+          <p class="standby-text">Upload a retinal fundus scan on the left or select a sample case to generate the
+            diagnostic assessment and SHAP feature attribution maps.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div class="state-loading hidden" id="loading-view">
+          <div class="loader-spinner"></div>
+          <h3 class="loading-title" id="loading-title">Analyzing Fundus Scan...</h3>
+          <p class="loading-desc" id="loading-desc">Extracting deep visual features and calculating SHAP attribution
+            maps...</p>
+          <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+          </div>
+          <p class="loading-note">First run computes 300 SHAP perturbations (~8–10s). Subsequent runs for identical
+            images are instant via disk cache.</p>
+        </div>
+
+        <!-- Active Diagnostic Results -->
+        <div class="state-results hidden" id="results-view">
+
+          <!-- Primary Diagnosis Banner -->
+          <div class="result-banner" id="result-banner">
+            <div class="result-main">
+              <div class="result-badge-row">
+                <span class="severity-pill" id="severity-pill">Moderate DR</span>
+                <span class="class-code" id="class-code">Stage 2</span>
+              </div>
+              <h3 class="result-diagnosis" id="result-diagnosis">Moderate Non-Proliferative DR</h3>
+              <p class="result-desc" id="result-desc">Observable microaneurysms and intraretinal hemorrhages.</p>
+            </div>
+            <div class="confidence-box">
+              <span class="conf-label">Confidence</span>
+              <span class="conf-value" id="conf-value">87.4%</span>
+            </div>
+          </div>
+
+          <!-- Doctor's Clinical Recommendation Card -->
+          <div class="clinical-advice-card" id="advice-card">
+            <div class="advice-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              <span>Clinical Decision Support Recommendation</span>
+            </div>
+            <p class="advice-text" id="advice-text">Refer to ophthalmology clinic within 4–6 weeks for dilated exam and
+              optical coherence tomography (OCT).</p>
+          </div>
+
+          <!-- 5-Class Probability Distribution -->
+          <div class="distribution-card">
+            <h4 class="card-mini-title">5-Class Calibrated Probabilities</h4>
+            <div class="prob-list" id="prob-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Visual XAI & Vasculature Tabs -->
+          <div class="xai-nav-tabs">
+            <button type="button" class="xai-tab-btn active" id="tab-shap-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+              SHAP Attribution Map
+            </button>
+            <button type="button" class="xai-tab-btn" id="tab-vessel-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Retinal Vasculature (DRIVE Biomarker)
+            </button>
+          </div>
+
+          <!-- SHAP Explainable AI Artifact -->
+          <div class="shap-card" id="shap-card">
+            <div class="shap-header">
+              <div>
+                <h4 class="card-mini-title">Explainable AI: Why did the model make this diagnosis?</h4>
+                <p class="shap-subtitle">Dual-panel artifact: Retinal Feature Attribution Map (left) &amp; Class
+                  Confidence Bar Chart (right)</p>
+              </div>
+              <button type="button" class="btn-zoom" id="zoom-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+                Zoom View
+              </button>
+            </div>
+
+            <!-- SHAP Image Display -->
+            <div class="shap-img-box" id="shap-img-box" title="Click to expand">
+              <img id="shap-img" src="" alt="SHAP Explainability Visualization">
+            </div>
+
+            <!-- Human-Readable Color Legend -->
+            <div class="shap-guide">
+              <div class="guide-item">
+                <span class="guide-swatch red"></span>
+                <span><strong>Red Heatmap (Positive Contribution):</strong> Retinal regions pushing the model
+                  <em>towards</em> this DR diagnosis (microaneurysms, hemorrhages, hard exudates).</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-swatch blue"></span>
+                <span><strong>Blue Heatmap (Negative Contribution):</strong> Healthy retinal areas and clear background
+                  tissue that reduced the predicted risk score.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DRIVE Retinal Vasculature Segmentation Card -->
+          <div class="vessel-card hidden" id="vessel-card">
+            <div class="shap-header">
+              <div>
+                <h4 class="card-mini-title">Retinal Vasculature &amp; Neovascularization Assessment</h4>
+                <p class="shap-subtitle">DRIVE-trained VesselUNet: Vascular branching, microvessel caliber &amp; proliferation</p>
+              </div>
+              <div class="vessel-badge-row">
+                <span class="vessel-pill" id="vessel-density-pill">Density: --%</span>
+                <span class="vessel-status-pill" id="vessel-status-pill">Baseline</span>
+              </div>
+            </div>
+
+            <!-- Vessel Overlay Image Display -->
+            <div class="shap-img-box" id="vessel-img-box" title="Click to expand">
+              <img id="vessel-img" src="" alt="Segmented Retinal Vasculature Overlay">
+            </div>
+
+            <!-- Quantitative Vessel Metrics -->
+            <div class="vessel-metrics-grid">
+              <div class="vessel-metric-item">
+                <span class="vessel-metric-label">Vessel Disc Density</span>
+                <span class="vessel-metric-val" id="metric-density">--%</span>
+              </div>
+              <div class="vessel-metric-item">
+                <span class="vessel-metric-label">Neovascularization Risk</span>
+                <span class="vessel-metric-val" id="metric-neovas">Normal</span>
+              </div>
+              <div class="vessel-metric-item full-width">
+                <span class="vessel-metric-label">Biomarker Diagnostic Analysis</span>
+                <p class="vessel-metric-desc" id="metric-desc">Awaiting patient scan analysis...</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal Lightbox for Zooming SHAP Panel -->
+  <div class="modal hidden" id="modal">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-dialog">
+      <button type="button" class="modal-close" id="modal-close">&times;</button>
+      <img id="modal-img" src="" alt="High-Resolution SHAP Artifact">
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Smart India Hackathon (SIH) • Diabetic Retinopathy Automated Screening Platform • Swin Transformer Backbone &amp;
+      SHAP Feature Attribution</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

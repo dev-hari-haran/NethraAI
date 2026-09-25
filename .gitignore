@@ -1,0 +1,97 @@
+# ==============================================================================
+# Smart India Hackathon (SIH) — Diabetic Retinopathy Platform .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Virtual Environments & Python Artifacts
+# ------------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ------------------------------------------------------------------------------
+# 2. Local Model Caches & Temp Directories (Disk-saving configs)
+# ------------------------------------------------------------------------------
+.cache/
+tmp/
+dump/
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# ------------------------------------------------------------------------------
+# 3. Model Checkpoints & Weights (>100MB exceeds GitHub hard limit)
+# ------------------------------------------------------------------------------
+checkpoints/*.pth
+checkpoints/*.pt
+checkpoints/*.bin
+checkpoints/*.onnx
+checkpoints/*.safetensors
+!checkpoints/.gitkeep
+
+# ------------------------------------------------------------------------------
+# 4. Large Datasets (Raw & Preprocessed Image Directories)
+# ------------------------------------------------------------------------------
+# Ignore bulky image datasets & processed arrays
+Data/train_images/
+Data/test_images/
+Data/processed/
+Data/iDRiD/
+Data/DRIVE/
+Data/messidor2/
+Data/*.csv
+Data/*.zip
+Data/*.tar.gz
+
+# Retain lightweight demo test samples for the web application
+!Data/sample*.png
+!Data/IDRiD_02.jpg
+!Data/IDRiD_07.jpg
+!Data/sample.tif
+
+# ------------------------------------------------------------------------------
+# 5. Output Caches & Temp Visualizations
+# ------------------------------------------------------------------------------
+outputs/xai_report/.cache/
+outputs/gradcam_examples/*.png
+!outputs/*.png
+
+# ------------------------------------------------------------------------------
+# 6. IDEs & Operating System Artifacts
+# ------------------------------------------------------------------------------
+.agents/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
