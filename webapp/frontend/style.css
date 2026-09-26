@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RetinaCare AI — Clean Medical UI Design System (SIH Presentation)
+   NethraAI — Clean Medical UI Design System
    ========================================================================== */
 
 :root {
@@ -99,17 +99,6 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.sih-tag {
-  font-size: 0.675rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.15rem 0.5rem;
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  border-radius: 9999px;
 }
 
 .brand-desc {

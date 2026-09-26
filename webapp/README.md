@@ -1,4 +1,4 @@
-# Diabetic Retinopathy Diagnostic Web App (Model + SHAP XAI)
+# NethraAI — Diabetic Retinopathy Diagnostic Web App (Model + SHAP XAI)
 
 A web interface and FastAPI backend providing automated Diabetic Retinopathy (DR) grading powered by a fine-tuned Swin Transformer backbone and Explainable AI (XAI) using SHAP (SHapley Additive exPlanations).
 

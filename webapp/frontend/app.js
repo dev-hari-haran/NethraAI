@@ -1,11 +1,12 @@
 /**
- * RetinaCare AI — Frontend Controller (SIH Clinical Presentation)
+ * NethraAI — Frontend Controller
  * Handles image selection, backend communication, and SHAP XAI rendering.
  */
 
-// Dynamically target backend URL
-const IS_SAME_ORIGIN = window.location.protocol.startsWith('http') && window.location.port === '8000';
-const API_BASE = IS_SAME_ORIGIN ? '' : 'http://localhost:8000';
+// Dynamically target backend URL (supports localStorage override for cloud/Netlify deployments)
+const SAVED_API = localStorage.getItem('nethra_api_url');
+const IS_SAME_ORIGIN = window.location.protocol.startsWith('http') && (window.location.port === '8000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+let API_BASE = (SAVED_API || (IS_SAME_ORIGIN && window.location.port === '8000' ? '' : 'http://localhost:8000')).replace(/\/+$/, '');
 
 // Clinical Decision Support Guidance Map
 const CLINICAL_GUIDELINES = {
@@ -107,15 +108,39 @@ async function checkHealth() {
       systemStatusText.textContent = `Model Ready (${data.device.toUpperCase()} Accelerated)`;
       document.querySelector('.status-dot').style.backgroundColor = '#10b981';
     } else {
-      systemStatusText.textContent = 'Model Server Error';
+      systemStatusText.textContent = 'Model Offline (Click to configure)';
       document.querySelector('.status-dot').style.backgroundColor = '#ef4444';
     }
   } catch (err) {
-    systemStatusText.textContent = 'Model Offline (Run uvicorn)';
+    systemStatusText.textContent = 'Model Offline (Click to configure)';
     document.querySelector('.status-dot').style.backgroundColor = '#ef4444';
   }
 }
 checkHealth();
+
+// Allow configuring backend URL by clicking status pill (useful on Netlify)
+const statusPill = document.getElementById('system-status');
+if (statusPill) {
+  statusPill.style.cursor = 'pointer';
+  statusPill.title = 'Click to configure backend API endpoint';
+  statusPill.addEventListener('click', () => {
+    const current = localStorage.getItem('nethra_api_url') || API_BASE;
+    const input = prompt("Configure NethraAI backend API URL:\n(e.g., https://your-backend.onrender.com or http://localhost:8000)", current);
+    if (input !== null) {
+      const trimmed = input.trim().replace(/\/+$/, '');
+      if (trimmed) {
+        localStorage.setItem('nethra_api_url', trimmed);
+        API_BASE = trimmed;
+      } else {
+        localStorage.removeItem('nethra_api_url');
+        API_BASE = IS_SAME_ORIGIN && window.location.port === '8000' ? '' : 'http://localhost:8000';
+      }
+      systemStatusText.textContent = 'Connecting...';
+      document.querySelector('.status-dot').style.backgroundColor = '#f59e0b';
+      checkHealth();
+    }
+  });
+}
 
 // ============================================================================
 // 2. File Selection & Drag-and-Drop
@@ -195,7 +220,15 @@ document.querySelectorAll('.case-btn').forEach(btn => {
     const originalText = btn.innerHTML;
     try {
       btn.textContent = 'Loading Scan...';
-      const res = await fetch(`${API_BASE}/sample-image/${encodeURIComponent(sample)}`);
+      let res;
+      try {
+        res = await fetch(`${API_BASE}/sample-image/${encodeURIComponent(sample)}`);
+      } catch (e) {
+        res = null;
+      }
+      if (!res || !res.ok) {
+        res = await fetch(`samples/${encodeURIComponent(sample)}`);
+      }
       if (!res.ok) throw new Error("Sample file not available.");
       const blob = await res.blob();
       const file = new File([blob], sample, { type: blob.type || 'image/png' });

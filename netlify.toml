@@ -1,0 +1,23 @@
+# Netlify Configuration for NethraAI
+[build]
+  publish = "webapp/frontend"
+
+# Security & performance headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/samples/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Single-page routing fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

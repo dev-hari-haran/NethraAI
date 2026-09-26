@@ -36,7 +36,7 @@ TMP_DIR = os.path.join(Config.BASE_DIR, "tmp")
 os.makedirs(TMP_DIR, exist_ok=True)
 
 app = FastAPI(
-    title="Diabetic Retinopathy XAI API",
+    title="NethraAI - Diabetic Retinopathy XAI API",
     description="FastAPI service for APTOS DR classification and SHAP visual explanations.",
     version="1.0.0"
 )
