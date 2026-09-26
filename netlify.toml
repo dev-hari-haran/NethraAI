@@ -1,6 +1,7 @@
-# Netlify Configuration for NethraAI
+# Netlify Configuration for NethraAI Frontend
 [build]
-  publish = "webapp/frontend"
+  base = "webapp/frontend"
+  publish = "."
 
 # Security & performance headers
 [[headers]]
