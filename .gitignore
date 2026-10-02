@@ -78,6 +78,7 @@ Data/*.tar.gz
 # 5. Output Caches & Temp Visualizations
 # ------------------------------------------------------------------------------
 outputs/xai_report/.cache/
+outputs/xai_report/confidence_panels/streamlit_shap_*.png
 outputs/gradcam_examples/*.png
 !outputs/*.png
 
