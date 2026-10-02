@@ -241,20 +241,20 @@ def generate_shap_explanation(model, image_input, target_class=None, output_file
     }
 
 
-def generate_confidence_panel(model, image_input, target_class=None, output_filename=None):
+def generate_confidence_panel(model, image_input, target_class=None, output_filename=None, max_evals=50, use_tta=False):
     """
     Builds a dual-panel artifact:
     Left: Retinal Image + SHAP Overlay
     Right: 5-Class Probability Bar Chart highlighting model confidence.
     """
-    model_wrapper = SHAPPredictWrapper(model)
+    model_wrapper = SHAPPredictWrapper(model, use_tta=use_tta)
 
     if isinstance(image_input, str):
         img_rgb = preprocess_single_image(image_input, target_size=Config.IMG_SIZE, apply_ben_graham=True)
     else:
         img_rgb = image_input
 
-    shap_maps, probs = compute_image_shap(model_wrapper, img_rgb)
+    shap_maps, probs = compute_image_shap(model_wrapper, img_rgb, max_evals=max_evals)
     pred_class = int(np.argmax(probs))
     conf = float(probs[pred_class])
 
