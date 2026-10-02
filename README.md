@@ -12,7 +12,7 @@
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20ASGI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Validation QWK](https://img.shields.io/badge/Validation%20QWK-0.884-success?style=for-the-badge)]()
 
-[🌐 Open Live Netlify Web App](https://nethra-ai.netlify.app) • [⚡ 60-Second Judge Quickstart](#-quick-run-guide-for-judges--evaluators) • [📊 Model Benchmarks](#-key-results--performance-showcase) • [🔍 Explainable AI](#-explainable-ai-xai--lesion-localization)
+[🌐 Open Live Netlify Web App](https://nethraa-ai.netlify.app) • [⚡ 60-Second Judge Quickstart](#-quick-run-guide-for-judges--evaluators) • [📊 Model Benchmarks](#-key-results--performance-showcase) • [🔍 Explainable AI](#-explainable-ai-xai--lesion-localization)
 
 </div>
 
