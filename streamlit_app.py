@@ -54,12 +54,15 @@ st.markdown("""
         text-align: center;
         margin-bottom: 15px;
     }
-    .metric-container {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 14px;
-        margin-bottom: 10px;
+    .instant-pill {
+        display: inline-block;
+        background: #0284c7;
+        color: white;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        margin-bottom: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -118,6 +121,35 @@ SEVERITY_META = {
     }
 }
 
+# Pre-computed SHAP confidence panels mapped to sample filenames
+SAMPLE_PRECOMPUTED_DATA = {
+    "samplem.png": os.path.join(Config.SHAP_CONFIDENCE_DIR, "samplem_confidence_panel.png"),
+    "samplen1.png": os.path.join(Config.SHAP_CONFIDENCE_DIR, "samplen1_confidence_panel.png"),
+    "samplep1.png": os.path.join(Config.SHAP_CONFIDENCE_DIR, "samplep1_confidence_panel.png"),
+    "samplep2.png": os.path.join(Config.SHAP_CONFIDENCE_DIR, "samplep2_confidence_panel.png"),
+    "samplep3.png": os.path.join(Config.SHAP_CONFIDENCE_DIR, "samplep3_confidence_panel.png"),
+    "IDRiD_02.jpg": os.path.join(Config.SHAP_CONFIDENCE_DIR, "IDRiD_02_confidence_panel.png"),
+    "IDRiD_07.jpg": os.path.join(Config.SHAP_CONFIDENCE_DIR, "IDRiD_07_confidence_panel.png"),
+}
+
+# -----------------------------------------------------------------------------
+# Cached Diagnosis & Segmentation Functions (Blazing Fast)
+# -----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def run_cached_diagnosis(image_path, use_tta=True):
+    return predict_single_image(image_path, model=model, use_tta=use_tta)
+
+@st.cache_data(show_spinner=False)
+def run_cached_vessel_segmentation(image_path, threshold=0.5):
+    img_bgr = cv2.imread(image_path)
+    segmentor = get_vessel_segmentor()
+    _, binary_mask, vessel_overlay, v_metrics = segmentor.segment_vessels(img_bgr, threshold=threshold)
+    return {
+        "binary_mask": binary_mask,
+        "vessel_overlay": vessel_overlay,
+        "metrics": v_metrics
+    }
+
 # -----------------------------------------------------------------------------
 # Sidebar: System Controls & Sample Selection
 # -----------------------------------------------------------------------------
@@ -139,13 +171,13 @@ with st.sidebar:
     st.subheader("Quick Test Samples")
     sample_options = {
         "Upload Custom Image": None,
-        "Sample M (Mild DR)": os.path.join(Config.DATA_DIR, "samplem.png"),
-        "Sample N1 (Normal / No DR)": os.path.join(Config.DATA_DIR, "samplen1.png"),
-        "Sample P1 (Proliferative DR)": os.path.join(Config.DATA_DIR, "samplep1.png"),
-        "Sample P2 (Severe / PDR)": os.path.join(Config.DATA_DIR, "samplep2.png"),
-        "Sample P3 (Proliferative)": os.path.join(Config.DATA_DIR, "samplep3.png"),
-        "IDRiD 02 (Clinical Sample)": os.path.join(Config.DATA_DIR, "IDRiD_02.jpg"),
-        "IDRiD 07 (Clinical Sample)": os.path.join(Config.DATA_DIR, "IDRiD_07.jpg"),
+        "Sample M (Class 1 — Mild DR)": os.path.join(Config.DATA_DIR, "samplem.png"),
+        "Sample N1 (Class 0 — Normal / No DR)": os.path.join(Config.DATA_DIR, "samplen1.png"),
+        "Sample P1 (Class 4 — Proliferative DR)": os.path.join(Config.DATA_DIR, "samplep1.png"),
+        "Sample P2 (Class 3 — Severe DR)": os.path.join(Config.DATA_DIR, "samplep2.png"),
+        "Sample P3 (Class 0 — Normal Retina)": os.path.join(Config.DATA_DIR, "samplep3.png"),
+        "IDRiD 02 (Class 2 — Moderate DR)": os.path.join(Config.DATA_DIR, "IDRiD_02.jpg"),
+        "IDRiD 07 (Class 3 — Severe DR)": os.path.join(Config.DATA_DIR, "IDRiD_07.jpg"),
     }
     selected_sample = st.selectbox("Select demo fundus image:", list(sample_options.keys()))
 
@@ -170,9 +202,10 @@ uploaded_file = st.file_uploader(
 
 input_image_path = None
 active_image_id = None
+is_sample_mode = False
+sample_filename = None
 
 if uploaded_file is not None:
-    # Hash upload bytes to detect when a new file is uploaded
     file_bytes = uploaded_file.getvalue()
     active_image_id = hashlib.md5(file_bytes).hexdigest()
     temp_dir = os.path.join(Config.BASE_DIR, "tmp")
@@ -185,18 +218,26 @@ elif sample_options[selected_sample] is not None:
     candidate = sample_options[selected_sample]
     if os.path.exists(candidate):
         input_image_path = candidate
-        active_image_id = os.path.basename(candidate)
+        sample_filename = os.path.basename(candidate)
+        active_image_id = sample_filename
+        is_sample_mode = True
     else:
         st.warning(f"Sample file not found at: {candidate}")
 
-# Reset session state if the image changes
+# Reset / initialize session state per active image
 if "current_image_id" not in st.session_state or st.session_state["current_image_id"] != active_image_id:
     st.session_state["current_image_id"] = active_image_id
     st.session_state["diag_result"] = None
     st.session_state["vessel_result"] = None
     st.session_state["shap_panel_path"] = None
 
-if input_image_path is not None:
+    # For pre-packaged samples, instantly link the pre-computed SHAP panel!
+    if is_sample_mode and sample_filename in SAMPLE_PRECOMPUTED_DATA:
+        precomputed_panel = SAMPLE_PRECOMPUTED_DATA[sample_filename]
+        if os.path.exists(precomputed_panel):
+            st.session_state["shap_panel_path"] = precomputed_panel
+
+if input_image_path is not None and models_ready:
     col_img, col_info = st.columns([1, 2])
     with col_img:
         st.image(input_image_path, caption="Active Retinal Fundus Input", width=360)
@@ -206,27 +247,29 @@ if input_image_path is not None:
             h, w = img_bgr.shape[:2]
             st.markdown(f"**Dimensions:** `{w} x {h} px`")
             st.markdown(f"**Color Channels:** `3 (RGB)`")
-            st.markdown(f"**Status:** Ready for AI Screening")
+            if is_sample_mode:
+                st.markdown('<span class="instant-pill">⚡ Clinical Validation Sample — Pre-computed SHAP Cached</span>', unsafe_allow_html=True)
+            else:
+                st.markdown(f"**Status:** Custom Patient Image Ready for AI Screening")
 
-        run_diag = st.button("🚀 Run Full Diagnostic Screening", type="primary", use_container_width=True)
+        if is_sample_mode:
+            # Auto-run for demo samples so user sees instant results immediately!
+            run_diag = True
+        else:
+            run_diag = st.button("🚀 Run Full Diagnostic Screening", type="primary", use_container_width=True)
 
     # -------------------------------------------------------------------------
     # Execution & Session State Caching
     # -------------------------------------------------------------------------
-    if run_diag and models_ready:
-        with st.spinner("Executing Swin Transformer diagnosis & DRIVE U-Net vessel morphometry (< 1s)..."):
-            # 1. Instant DR Diagnosis via Swin-Tiny (0.2s)
-            diag_res = predict_single_image(input_image_path, model=model, use_tta=use_tta)
+    if (run_diag or is_sample_mode) and models_ready:
+        if st.session_state.get("diag_result") is None:
+            # 1. Fast DR Diagnosis (< 0.2s)
+            diag_res = run_cached_diagnosis(input_image_path, use_tta=use_tta)
             st.session_state["diag_result"] = diag_res
 
-            # 2. Instant Vessel Segmentation via U-Net (0.3s)
-            segmentor = get_vessel_segmentor()
-            _, binary_mask, vessel_overlay, v_metrics = segmentor.segment_vessels(img_bgr, threshold=vessel_thresh)
-            st.session_state["vessel_result"] = {
-                "binary_mask": binary_mask,
-                "vessel_overlay": vessel_overlay,
-                "metrics": v_metrics
-            }
+            # 2. Fast Vessel Segmentation (< 0.3s)
+            vessel_res = run_cached_vessel_segmentation(input_image_path, threshold=vessel_thresh)
+            st.session_state["vessel_result"] = vessel_res
 
     # -------------------------------------------------------------------------
     # Display Results if Available in Session State
@@ -275,10 +318,16 @@ if input_image_path is not None:
             st.markdown("---")
             st.subheader("Dual-Panel SHAP Explainability & Confidence Analysis")
 
-            # Check if SHAP was already computed for this session
+            # Check if SHAP was precomputed or generated for this session
             panel_path = st.session_state.get("shap_panel_path")
 
-            if panel_path is None or not os.path.exists(panel_path):
+            if panel_path is not None and os.path.exists(panel_path):
+                st.image(panel_path, caption="SHAP Attribution Heatmap (Left: Feature Importance, Right: Confidence Interval)", width=900)
+                st.caption(
+                    "🔴 **Red pixels:** Retinal regions strongly driving the severity assessment (microaneurysms, hemorrhages, hard exudates). "
+                    "🔵 **Blue pixels:** Healthy retinal background and protective features suppressing higher severity."
+                )
+            else:
                 st.caption("SHAP generates pixel-level attribution to visualize microaneurysms, hemorrhages, and exudates.")
                 col_btn, _ = st.columns([1, 2])
                 with col_btn:
@@ -287,7 +336,6 @@ if input_image_path is not None:
                 if gen_shap:
                     with st.spinner("Computing SHAP saliency attribution (Optimized 50 evaluations)..."):
                         unique_name = f"streamlit_shap_{uuid.uuid4().hex[:8]}.png"
-                        # Lightweight 50 evaluations with use_tta=False for cloud safety (runs in ~10s without OOM)
                         panel_path = generate_confidence_panel(
                             model,
                             input_image_path,
@@ -297,12 +345,6 @@ if input_image_path is not None:
                         )
                         st.session_state["shap_panel_path"] = panel_path
                         st.rerun()
-            else:
-                st.image(panel_path, caption="SHAP Attribution Heatmap (Left: Feature Importance, Right: Confidence Interval)", width=900)
-                st.caption(
-                    "🔴 **Red pixels:** Retinal regions strongly driving the severity assessment (microaneurysms, hemorrhages, hard exudates). "
-                    "🔵 **Blue pixels:** Healthy retinal background and protective features suppressing higher severity."
-                )
 
         # ---------------------------------------------------------------------
         # Tab 2: Vessel Segmentation
